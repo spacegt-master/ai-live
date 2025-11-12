@@ -25,7 +25,7 @@
                   item-title="name" item-value="id" clearable></v-select>
               </v-col>
               <v-col style="text-align: end;">
-                <!-- <v-btn style="margin-top: 19px; margin-right: 10px;" class="pa-2" :color="'primary'">批量删除</v-btn> -->
+                <v-btn style="margin-top: 19px; margin-right: 10px;" class="pa-2" :color="'primary'">批量删除</v-btn>
                 <v-btn style="margin-top: 19px;" class="pa-2" :color="'primary'" @click="editItem(null)">新增课程</v-btn>
               </v-col>
             </v-row>
@@ -128,203 +128,208 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  computed
-} from 'vue';
-import {
-  courseApi
-} from '@/api/course';
-import { useFileUri } from '@/utils/file-uri';
-import { FileApi } from '@/api/file';
-import { useObjectUrl } from '@vueuse/core';
-import { VFileUpload } from 'vuetify/labs/VFileUpload';
-import { useCourseStore } from '@/stores/course';
+  import {
+    ref,
+    computed,
+    onMounted
+  } from 'vue';
+  import {
+    courseApi
+  } from '@/api/course';
+  import { useFileUri } from '@/utils/file-uri';
+  import { FileApi } from '@/api/file';
+  import { useObjectUrl } from '@vueuse/core';
+  import { VFileUpload } from 'vuetify/labs/VFileUpload';
+  import { useCourseStore } from '@/stores/course';
 
-interface CourseItem {
-  id: string
-  name: string
-  type: any
-  typeName: string | null
-  classifyId: any
-  classifyName: string | null
-  state: number | null
-  isPublished: number | null
-  thumbnail: any
-  introduce: string | null
-  courseCode: string | null
-  url: string | null
-  urlOld: string | null
-  file: string | null
-  inputType: 'file'
-}
-
-const courseStore = useCourseStore()
-const totalItems = ref(0)
-const loaded = ref(false)
-const loading = ref(false)
-const loadingEdit = ref(false)
-const dialogDelete = ref(false)
-const dialogChapter = ref(false)
-const dialog = ref(false)
-const editedIndex = ref(-1)
-const types = ref<string[]>([])
-const classify = ref<string[]>([])
-const coverFile = ref()
-const currentChapter = ref(null)
-
-const options = ref({
-  page: 1,
-  itemsPerPage: 10
-})
-
-const headers: any = [{
-  title: '序号',
-  align: 'start',
-  sortable: false,
-  key: 'index',
-},
-{
-  title: '课程封面',
-  sortable: false,
-  key: 'thumbnail',
-  nowrap: true
-},
-{
-  title: '课程分类',
-  key: 'typeName',
-},
-{
-  title: '课程类型',
-  key: 'classifyName',
-},
-{
-  title: '标题',
-  key: 'name',
-},
-{
-  title: '课程代码',
-  key: 'courseCode',
-},
-{
-  title: '创建时间',
-  key: 'createTime',
-},
-{
-  title: '审核状态',
-  key: 'state'
-},
-{
-  title: '操作',
-  key: 'actions',
-  sortable: false,
-  align: 'center'
-}]
-
-const search = ref({
-  name: '',
-  category: null,
-  type: null,
-  state: null
-})
-
-const status = ref([
-  { id: 0, name: '审核中' }, { id: 1, name: '已通过' }, { id: 2, name: '未通过' }
-])
-const serverItems = ref<CourseItem[]>([])
-const formTitle = computed(() => editedIndex.value === -1 ? '新增课程' : '编辑课程')
-const editedItem = ref<Partial<CourseItem>>()
-const defaultItem = ref<Partial<CourseItem>>()
-
-const editItem = async (item: any) => {
-  if (item) {
-    const itemCopy = { ...item }
-    delete itemCopy.createTime
-    editedIndex.value = serverItems.value.indexOf(itemCopy)
-    editedItem.value = Object.assign({}, itemCopy)
-    if (editedItem.value) {
-      editedItem.value.urlOld = editedItem.value?.url
-      editedItem.value.inputType = 'file'
-    }
-  } else {
-    editedItem.value = Object.assign({}, defaultItem.value)
-    editedIndex.value = -1;
+  interface CourseItem {
+    id : string
+    name : string
+    type : any
+    typeName : string | null
+    classifyId : any
+    classifyName : string | null
+    state : number | null
+    isPublished : number | null
+    thumbnail : any
+    introduce : string | null
+    courseCode : string | null
+    url : string | null
+    urlOld : string | null
+    file : string | null
+    inputType : 'file'
   }
-  dialog.value = true
-}
 
-const deleteItem = async (item: any) => {
-  editedItem.value = Object.assign({}, item)
-  dialogDelete.value = true;
-}
+  const courseStore = useCourseStore()
+  const totalItems = ref(0)
+  const loaded = ref(false)
+  const loading = ref(false)
+  const loadingEdit = ref(false)
+  const dialogDelete = ref(false)
+  const dialogChapter = ref(false)
+  const dialog = ref(false)
+  const editedIndex = ref(-1)
+  const types = ref<string[]>([])
+  const classify = ref<string[]>([])
+  const coverFile = ref()
+  const currentChapter = ref(null)
 
-const deleteItemConfirm = async () => {
-  if (editedItem.value && editedItem.value.id) {
-    await courseApi.del(editedItem.value.id)
-    loadItems(options.value)
-    dialogDelete.value = false;
-  }
-}
-
-const save = async () => {
-  loadingEdit.value = true
-  try {
-    if (coverFile.value) {
-      const coverConfig = await FileApi.upload(coverFile.value, 'live/course/cover', true) as any
-      if (editedItem.value)
-        editedItem.value.thumbnail = FileApi.filePath + coverConfig.url
-    }
-    await courseApi.save({
-      ...editedItem.value
-    })
-    loadItems(options.value)
-    dialog.value = false
-  } catch (e) {
-    /* empty */
-  }
-  loadingEdit.value = false
-}
-
-const loadItems = async ({ page, itemsPerPage }: any) => {
-  loading.value = true
-  await courseStore.loadTypes()
-  await courseStore.loadClassifys()
-
-  const res = await courseApi.manage({
-    types: search.value.type,
-    categories: search.value.category,
-    page: page,
-    size: itemsPerPage,
-    name: search.value.name,
-    state: search.value.state
-  }) as any
-  serverItems.value = res.records.map((item: any, index: number) => {
-    return {
-      ...item,
-      index: (page - 1) * 10 + index + 1,
-    }
+  const options = ref({
+    page: 1,
+    itemsPerPage: 10
   })
-  /* console.log(serverItems.value); */
-  totalItems.value = res.total
-  loading.value = false
-}
 
-const handleCoverFileUpdate = (file: any) => {
-  if (editedItem.value)
-    editedItem.value.thumbnail = useObjectUrl(file).value
-}
+  const headers : any = [{
+    title: '序号',
+    align: 'start',
+    sortable: false,
+    key: 'index',
+  },
+  {
+    title: '课程封面',
+    sortable: false,
+    key: 'thumbnail',
+    nowrap: true
+  },
+  {
+    title: '课程分类',
+    key: 'typeName',
+  },
+  {
+    title: '课程类型',
+    key: 'classifyName',
+  },
+  {
+    title: '标题',
+    key: 'name',
+  },
+  {
+    title: '课程代码',
+    key: 'courseCode',
+  },
+  {
+    title: '创建时间',
+    key: 'createTime',
+  },
+  {
+    title: '审核状态',
+    key: 'state'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    sortable: false,
+    align: 'center'
+  }]
+
+  const search = ref({
+    name: '',
+    category: null,
+    type: null,
+    state: null
+  })
+
+  const status = ref([
+    { id: 0, name: '审核中' }, { id: 1, name: '已通过' }, { id: 2, name: '未通过' }
+  ])
+  const serverItems = ref<CourseItem[]>([])
+  const formTitle = computed(() => editedIndex.value === -1 ? '新增课程' : '编辑课程')
+  const editedItem = ref<Partial<CourseItem>>()
+  const defaultItem = ref<Partial<CourseItem>>()
+
+  const editItem = async (item : any) => {
+    if (item) {
+      const itemCopy = { ...item }
+      delete itemCopy.createTime
+      editedIndex.value = serverItems.value.indexOf(itemCopy)
+      editedItem.value = Object.assign({}, itemCopy)
+      if (editedItem.value) {
+        editedItem.value.urlOld = editedItem.value?.url
+        editedItem.value.inputType = 'file'
+      }
+    } else {
+      editedItem.value = Object.assign({}, defaultItem.value)
+      editedIndex.value = -1;
+    }
+    dialog.value = true
+  }
+
+  const deleteItem = async (item : any) => {
+    editedItem.value = Object.assign({}, item)
+    dialogDelete.value = true;
+  }
+
+  const deleteItemConfirm = async () => {
+    if (editedItem.value && editedItem.value.id) {
+      await courseApi.del(editedItem.value.id)
+      loadItems(options.value)
+      dialogDelete.value = false;
+    }
+  }
+
+  const save = async () => {
+    loadingEdit.value = true
+    try {
+      if (coverFile.value) {
+        const coverConfig = await FileApi.upload(coverFile.value, 'live/course/cover', true) as any
+        if (editedItem.value)
+          editedItem.value.thumbnail = FileApi.filePath + coverConfig.url
+      }
+      await courseApi.save({
+        ...editedItem.value
+      })
+      loadItems(options.value)
+      dialog.value = false
+    } catch (e) {
+      /* empty */
+    }
+    loadingEdit.value = false
+  }
+
+  const loadItems = async ({ page, itemsPerPage } : any) => {
+    loading.value = true
+    await courseStore.loadTypes()
+    await courseStore.loadClassifys()
+
+    const res = await courseApi.manage({
+      types: search.value.type,
+      categories: search.value.category,
+      page: page,
+      size: itemsPerPage,
+      name: search.value.name,
+      state: search.value.state
+    }) as any
+    serverItems.value = res.records.map((item : any, index : number) => {
+      return {
+        ...item,
+        index: (page - 1) * 10 + index + 1,
+      }
+    })
+    /* console.log(serverItems.value); */
+    totalItems.value = res.total
+    loading.value = false
+  }
+
+  onMounted(() => {
+    loadItems(options.value)
+  })
+
+  const handleCoverFileUpdate = (file : any) => {
+    if (editedItem.value)
+      editedItem.value.thumbnail = useObjectUrl(file).value
+  }
 </script>
 
 <style scoped>
-.status-pending {
-  color: orange;
-}
+  .status-pending {
+    color: orange;
+  }
 
-.status-approved {
-  color: green;
-}
+  .status-approved {
+    color: green;
+  }
 
-.status-rejected {
-  color: red;
-}
+  .status-rejected {
+    color: red;
+  }
 </style>

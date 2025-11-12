@@ -197,6 +197,7 @@ const loadItems = async () => {
     /* const res = await courseApi.detail(props.courseId) */
     const res = await ChapterApi.list(props.courseId)
     chapters.value = res
+    console.log(chapters.value)
   } catch (error) {
     console.error('加载失败:', error)
   } finally {
