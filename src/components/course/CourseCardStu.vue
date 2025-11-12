@@ -26,7 +26,10 @@
       </v-list-item>
 
      <v-card-text
-     style="overflow-y: hidden; max-height: 100px;"
+        style="overflow-y: hidden ; max-height: 50px;
+      font-size: 12px;    
+    line-height: 1.3;  
+     "
      >
      {{ "简介："+course.introduce }}
     </v-card-text>

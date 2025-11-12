@@ -35,7 +35,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import SAvatar from './avatar_video.vue'
+import SAvatar from './avatar_ai.vue'
 import SDocs from './docs.vue'
 import { useRoute, useRouter } from 'vue-router'
 

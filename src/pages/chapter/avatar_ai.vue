@@ -106,11 +106,12 @@ const general = () => {
 }
 
 const prefabricated = () => {
+    console.log(route)
     sendWait({
         event_type: 'content_offer',
-        // course: route.params.id,
+        course: route.params.chapterid,
         // or
-        // chapter: 1,
+        // chapter: route.params.chapterid,
     })
 }
 

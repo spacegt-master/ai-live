@@ -14,10 +14,10 @@
           @update:types="updateSelectedTypes" @update:category="updateSelectedCategory" @update:search="updateSearch" />
       </div>
 
-      <div>
+      <div >
         <!-- 课程列表 -->
         <v-container max-width="100%">
-          <v-row :gap="0">
+          <v-row :gap="0" >
             <template v-for="(course, index) in displayedCourses" :key="course.id || index">
               <!-- 超小屏幕（xs）每行1个 -->
               <!-- 小屏幕（sm）每行2个 -->

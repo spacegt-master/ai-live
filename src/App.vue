@@ -1,5 +1,7 @@
 <template>
-  <router-view />
+  <v-app class="h-100">
+    <router-view />
+  </v-app>
 </template>
 
 <script setup>
